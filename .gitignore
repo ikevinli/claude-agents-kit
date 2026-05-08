@@ -1,0 +1,4 @@
+# No real secrets should ever be in this repo.
+# If you add env files or injected keys here, they'll leak.
+.env
+*.env

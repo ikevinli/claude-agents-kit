@@ -1,0 +1,52 @@
+version: "1.0"
+default_scope:
+  allowed_paths:
+    - "src/**"
+    - "tests/**"
+    - "docs/**"
+    - "*.{js,ts,py,rs,go,sh}"
+  forbidden_paths:
+    - ".env*"
+    - "**/secrets.*"
+    - "node_modules/**"
+    - "target/**"
+  max_files_changed: 10
+  requires_review: false
+
+tasks:
+  - id: feat-add-component
+    description: "Add a new UI component following the existing pattern"
+    allowed_paths:
+      - "src/components/**"
+      - "src/styles/**"
+      - "tests/components/**"
+    forbidden_paths:
+      - "src/backend/**"
+      - "infra/**"
+    max_files_changed: 5
+    requires_review: true
+
+  - id: fix-bug
+    description: "Fix a single bug in any layer; must include a regression test"
+    allowed_paths:
+      - "src/**"
+      - "tests/**"
+    forbidden_paths:
+      - "infra/**"
+      - "docs/**"
+    max_files_changed: 3
+    requires_review: false
+
+  - id: refactor-internal
+    description: "Internal refactoring without changing external API or behavior"
+    allowed_paths:
+      - "src/**"
+      - "scripts/**"
+    forbidden_paths:
+      - "tests/**"
+    max_files_changed: 8
+    requires_review: true
+
+scope_check:
+  enforce: true
+  block_on_violation: true

@@ -1,0 +1,12 @@
+# This file defines code ownership for the repository.
+# Each line specifies a file pattern and one or more owners.
+# Glob patterns are supported. Replace PROJECT_OWNER with the
+# actual GitHub username or team slug (e.g., @my-org/my-team).
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @PROJECT_OWNER
+
+.ai/       @PROJECT_OWNER
+.github/   @PROJECT_OWNER
+scripts/   @PROJECT_OWNER
+.husky/    @PROJECT_OWNER

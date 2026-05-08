@@ -1,0 +1,100 @@
+#!/usr/bin/env sh
+
+# Husky pre-commit hook — Phase 4: scope check + secrets/large-file detection
+
+[ -f "$(dirname -- "$0")/_/husky.sh" ] && . "$(dirname -- "$0")/_/husky.sh"
+
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    echo "[pre-commit] fatal: not a git repository" >&2
+    exit 1
+}
+
+ALLOW_MAIN_COMMIT="${ALLOW_MAIN_COMMIT:-0}"
+ALLOW_LARGE_FILES="${ALLOW_LARGE_FILES:-0}"
+ALLOW_SECRETS_OVERRIDE="${ALLOW_SECRETS_OVERRIDE:-0}"
+
+# Block direct commits to main/master
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+case "$CURRENT_BRANCH" in
+    main|master)
+        if [ "$ALLOW_MAIN_COMMIT" != "1" ]; then
+            echo "[pre-commit] error: direct commits to '${CURRENT_BRANCH}' are blocked." >&2
+            echo "  Use a feature branch, or set ALLOW_MAIN_COMMIT=1 to override." >&2
+            exit 1
+        fi
+        ;;
+esac
+
+# Detect staged files >5MB
+large_files=""
+for f in $(git diff --cached --name-only --diff-filter=ACMR); do
+    [ -f "$PROJECT_ROOT/$f" ] || continue
+    size=$(wc -c < "$PROJECT_ROOT/$f" 2>/dev/null || echo 0)
+    if [ "$size" -gt 5242880 ]; then
+        large_files="${large_files}  ${f} (${size} bytes)\n"
+    fi
+done
+if [ -n "$large_files" ] && [ "$ALLOW_LARGE_FILES" != "1" ]; then
+    echo "[pre-commit] warning: large files detected (>5MB):" >&2
+    printf "%b" "$large_files" >&2
+    echo "  Set ALLOW_LARGE_FILES=1 to override." >&2
+    exit 1
+fi
+
+# Detect potential secrets in staged diff
+SECRET_PATTERN='(api[_-]?key|secret|password|token)[[:space:]]*[:=][[:space:]]*['"'"'"]?[A-Za-z0-9_\-]{16,}'
+AWS_KEY_PATTERN='AKIA[0-9A-Z]{16}'
+STAGED_DIFF="$(git diff --cached 2>/dev/null)"
+if echo "$STAGED_DIFF" | grep -Eiq "$SECRET_PATTERN"; then
+    echo "[pre-commit] error: potential secrets detected in staged diff." >&2
+    if [ "$ALLOW_SECRETS_OVERRIDE" != "1" ]; then
+        echo "  Review changes and retry with ALLOW_SECRETS_OVERRIDE=1 to bypass." >&2
+        exit 1
+    fi
+    echo "  ALLOW_SECRETS_OVERRIDE=1 set — continuing with warning." >&2
+fi
+if echo "$STAGED_DIFF" | grep -Eq "$AWS_KEY_PATTERN"; then
+    echo "[pre-commit] error: potential AWS access key (AKIA...) in staged diff." >&2
+    if [ "$ALLOW_SECRETS_OVERRIDE" != "1" ]; then
+        echo "  Review changes and retry with ALLOW_SECRETS_OVERRIDE=1 to bypass." >&2
+        exit 1
+    fi
+    echo "  ALLOW_SECRETS_OVERRIDE=1 set — continuing with warning." >&2
+fi
+
+# Run scope check
+if [ -f "$PROJECT_ROOT/scripts/check-scope.js" ]; then
+    node "$PROJECT_ROOT/scripts/check-scope.js"
+    SCOPE_EXIT=$?
+else
+    echo "[pre-commit] note: scripts/check-scope.js missing — scope check skipped." >&2
+    SCOPE_EXIT=0
+fi
+
+case $SCOPE_EXIT in
+    2)
+        echo "[pre-commit] scope violation — commit blocked" >&2
+        exit 1
+        ;;
+    1)
+        echo "[pre-commit] scope warnings detected." >&2
+        if [ -t 0 ]; then
+            printf "Continue with commit? (y/N) " >&2
+            read -r answer
+            case "$answer" in
+                [Yy]|[Yy][Ee][Ss]) exit 0 ;;
+                *) exit 1 ;;
+            esac
+        else
+            echo "[pre-commit] non-TTY — continuing." >&2
+            exit 0
+        fi
+        ;;
+    0)
+        exit 0
+        ;;
+    *)
+        echo "[pre-commit] scope check returned unexpected exit code: $SCOPE_EXIT" >&2
+        exit 1
+        ;;
+esac

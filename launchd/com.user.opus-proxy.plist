@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.opus-proxy</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>/Users/mac/bin/opus-proxy.js</string>
+    </array>
+    <key>KeepAlive</key>
+    <dict>
+        <key>Crashed</key>
+        <true/>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+    <key>WorkingDirectory</key>
+    <string>/Users/mac/bin</string>
+    <key>StandardOutPath</key>
+    <string>/Users/mac/.claude/logs/opus-proxy.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/mac/.claude/logs/opus-proxy.err.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+        <key>NODE_ENV</key>
+        <string>production</string>
+        <key>OPENROUTER_API_KEY</key>
+        <string>__OPENROUTER_API_KEY__</string>
+    </dict>
+</dict>
+</plist>

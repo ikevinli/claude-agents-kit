@@ -1,0 +1,43 @@
+version: "1.0"
+triggers:
+  - name: scope-check
+    on: pre-commit
+    run: "node scripts/check-scope.js"
+    blocking: true
+    description: "Verify that all staged changes stay within defined task scopes"
+
+  - name: lint-check
+    on: pre-commit
+    run: "npm run lint"
+    blocking: false
+    description: "Run linter on staged files; report but do not block"
+
+  - name: test-run
+    on: pre-push
+    run: "npm test"
+    blocking: true
+    description: "Run full test suite before pushing"
+
+  - name: build-check
+    on: pre-push
+    run: "npm run build"
+    blocking: true
+    description: "Ensure project builds cleanly before push"
+
+  - name: post-edit-lint
+    on: post-edit
+    run: "npm run lint"
+    blocking: false
+    description: "Quick lint feedback after editing (non-blocking)"
+
+  - name: browser-smoke
+    on: manual
+    run: "mcp__cl-qa__puppeteer_smoke"
+    blocking: true
+    description: "Run browser-based smoke tests using cl-qa agent (manual trigger)"
+
+  - name: verify-constitution
+    on: pre-commit
+    run: "bash scripts/verify.sh"
+    blocking: true
+    description: "Run constitution-level verification (secrets scan, rule checks)"
