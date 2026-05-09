@@ -4,13 +4,20 @@ default_scope:
     - "src/**"
     - "tests/**"
     - "docs/**"
-    - "*.{js,ts,py,rs,go,sh}"
+    - ".ai/**"
+    - ".github/**"
+    - ".husky/**"
+    - "scripts/**"
+    - "launchd/**"
+    - ".gitignore"
+    - ".gitattributes"
+    - "*.{js,ts,py,rs,go,sh,json,yaml,yml}"
   forbidden_paths:
     - ".env*"
     - "**/secrets.*"
     - "node_modules/**"
     - "target/**"
-  max_files_changed: 10
+  max_files_changed: 50
   requires_review: false
 
 tasks:

@@ -269,13 +269,32 @@ function main() {
 
     let files;
     try {
-        const diffArgs = dryRun
-            ? ['diff', '--name-only', 'HEAD~1', 'HEAD']
-            : ['diff', '--cached', '--name-only', '--diff-filter=ACMR'];
-        const out = execFileSync('git', diffArgs, {
-            encoding: 'utf8', cwd: projectRoot, stdio: ['ignore', 'pipe', 'pipe'],
-        }).trim();
-        files = out ? out.split('\n').filter(Boolean) : [];
+        if (dryRun) {
+            // Check if HEAD has a parent (initial commit has no HEAD~1)
+            let hasParent = true;
+            try {
+                execFileSync('git', ['rev-parse', '--verify', 'HEAD~1'], {
+                    encoding: 'utf8', cwd: projectRoot, stdio: ['ignore', 'pipe', 'pipe'],
+                });
+            } catch (_) { hasParent = false; }
+            if (hasParent) {
+                const out = execFileSync('git', ['diff', '--name-only', 'HEAD~1', 'HEAD'], {
+                    encoding: 'utf8', cwd: projectRoot, stdio: ['ignore', 'pipe', 'pipe'],
+                }).trim();
+                files = out ? out.split('\n').filter(Boolean) : [];
+            } else {
+                // Root commit — list all tracked files
+                const out = execFileSync('git', ['ls-tree', '-r', '--name-only', 'HEAD'], {
+                    encoding: 'utf8', cwd: projectRoot, stdio: ['ignore', 'pipe', 'pipe'],
+                }).trim();
+                files = out ? out.split('\n').filter(Boolean) : [];
+            }
+        } else {
+            const out = execFileSync('git', ['diff', '--cached', '--name-only', '--diff-filter=ACMR'], {
+                encoding: 'utf8', cwd: projectRoot, stdio: ['ignore', 'pipe', 'pipe'],
+            }).trim();
+            files = out ? out.split('\n').filter(Boolean) : [];
+        }
     } catch (err) {
         process.stderr.write(fmt(`[scope-check] error: git diff failed: ${err.message}\n`, 'red'));
         process.exit(2);
