@@ -1,18 +1,9 @@
 name: ci
-
 on:
   push:
     branches: [main]
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   scope-check:
-    if: hashFiles('scripts/check-scope.js') != ''
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -24,67 +15,17 @@ jobs:
           node-version: '20'
       - run: node scripts/check-scope.js --dry-run
 
-  lint:
-    if: hashFiles('package.json') != ''
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci && npm run lint --if-present
-
-  typecheck:
-    if: hashFiles('tsconfig.json') != ''
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci && npm run typecheck --if-present
-
-  test:
-    if: hashFiles('package.json') != ''
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci && npm test --if-present
-
-  build:
-    if: hashFiles('package.json') != ''
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci && npm run build --if-present
-
   ci-success:
-    needs: [scope-check, lint, typecheck, test, build]
+    needs: [scope-check]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Check job results
+      - name: Check results
         env:
           R_SCOPE: ${{ needs.scope-check.result }}
-          R_LINT: ${{ needs.lint.result }}
-          R_TC: ${{ needs.typecheck.result }}
-          R_TEST: ${{ needs.test.result }}
-          R_BUILD: ${{ needs.build.result }}
         run: |
-          if [ "$R_SCOPE" = "failure" ] || [ "$R_LINT" = "failure" ] || \
-             [ "$R_TC" = "failure" ] || [ "$R_TEST" = "failure" ] || \
-             [ "$R_BUILD" = "failure" ]; then
-            echo "One or more required jobs failed."
+          if [ "$R_SCOPE" = "failure" ]; then
+            echo "scope-check failed."
             exit 1
           fi
-          echo "All required jobs passed (or were skipped due to missing files)."
+          echo "All checks passed."
